@@ -1,0 +1,17 @@
+name: Rust
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify exact Cerune source snapshot
+        run: python3 scripts/verify_snapshot.py
+      - name: Run Rust tests
+        run: cargo test --all-targets
+      - name: Compile check
+        run: cargo check --all-targets

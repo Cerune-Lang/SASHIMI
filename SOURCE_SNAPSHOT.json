@@ -1,0 +1,10 @@
+{
+  "repository": "Cerune-Lang/Cerune",
+  "branch": "master",
+  "sha1_git_blob": {
+    "src/codegen/x86_64/object.rs": "4482bc65ea3e4130b5b7f96282cf855197aa1825",
+    "src/codegen/x86_64/object/parse.rs": "8b9a4b9b1dfc04ef59ee6c5b7951f1d5c092f7ce",
+    "src/codegen/x86_64/object/encode.rs": "1407d415e55a4e09a14c7528ae4d4290a92fcf6f",
+    "src/codegen/x86_64/object/format.rs": "9ea56b638236c63c3c22d79be1ff900c26b41af1"
+  }
+}

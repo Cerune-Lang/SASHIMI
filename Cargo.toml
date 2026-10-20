@@ -1,0 +1,12 @@
+[package]
+name = "sashimi-assembler"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Experimental extracted Cerune x86-64 assembler kernel (ELF64/COFF)"
+
+[lib]
+name = "sashimi_assembler"
+path = "src/lib.rs"
+
+[dependencies]

@@ -138,6 +138,8 @@ pub(super) fn assemble(assembly: &str) -> Result<Object, String> {
     }
     all.sort_by(|a, b| (a.global, &a.name).cmp(&(b.global, &b.name)));
     Ok(Object {
+        alignments: [16; 3],
+        include_data: false,
         sections,
         symbols: all,
         relocations,

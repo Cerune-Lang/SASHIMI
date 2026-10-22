@@ -1,4 +1,4 @@
-//! Typed, relocation-free x86-64 instructions. No assembly parser is used.
+//! Typed x86-64 instructions and Program-local symbol operands. No assembly parser is used.
 //!
 //! ```
 //! use sashimi_assembler::typed::{
@@ -15,7 +15,7 @@
 //! # Ok::<(), sashimi_assembler::Diagnostic>(())
 //!
 //! ```
-use crate::{Diagnostic, object::encode};
+use crate::{Diagnostic, object::encode, program::SymbolId};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Width {
@@ -106,7 +106,7 @@ impl Scale {
     }
 }
 
-/// Base/index addressing; RIP-relative symbols belong to the next API stage.
+/// Checked base/index addressing. See Operand::RipRelative for symbolic addressing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Memory {
     base: Register,
@@ -140,6 +140,8 @@ pub enum Operand {
     Register(Register),
     Immediate(i128),
     Memory(Memory),
+    Symbol(SymbolId),
+    RipRelative(SymbolId),
 }
 impl From<Register> for Operand {
     fn from(r: Register) -> Self {
@@ -152,8 +154,10 @@ impl From<Memory> for Operand {
     }
 }
 impl Operand {
-    fn core(&self) -> encode::Operand {
+    pub(crate) fn core(&self, name: impl Fn(SymbolId) -> String) -> encode::Operand {
         match self {
+            Self::Symbol(id) => encode::Operand::Label(name(*id)),
+            Self::RipRelative(id) => encode::Operand::Relative(name(*id)),
             Self::Register(r) => encode::Operand::Register(r.core()),
             Self::Immediate(n) => encode::Operand::Immediate(*n),
             Self::Memory(m) => encode::Operand::Memory {
@@ -164,8 +168,10 @@ impl Operand {
             },
         }
     }
-    fn asm(&self) -> String {
+    pub(crate) fn asm(&self, name: impl Fn(SymbolId) -> String) -> String {
         match self {
+            Self::Symbol(id) => name(*id),
+            Self::RipRelative(id) => format!("{}(%rip)", name(*id)),
             Self::Register(r) => r.asm(),
             Self::Immediate(n) => format!("${n}"),
             Self::Memory(m) => match m.index {
@@ -194,6 +200,25 @@ macro_rules! opcodes {
     };
 }
 opcodes! {
+    Call => "callq",
+    Jump => "jmp",
+    JumpO => "jo",
+    JumpNo => "jno",
+    JumpB => "jb",
+    JumpAe => "jae",
+    JumpE => "je",
+    JumpNe => "jne",
+    JumpBe => "jbe",
+    JumpA => "ja",
+    JumpS => "js",
+    JumpNs => "jns",
+    JumpP => "jp",
+    JumpNp => "jnp",
+    JumpL => "jl",
+    JumpGe => "jge",
+    JumpLe => "jle",
+    JumpG => "jg",
+    Interrupt => "int",
     Ret => "retq",
     SignExtendRax => "cqto",
     Undefined => "ud2",
@@ -295,7 +320,20 @@ impl Instruction {
 /// Encode one relocation-free instruction. The result is machine bytes, not an object.
 /// This operation is ISA-specific and independent of the operating system target.
 pub fn encode_instruction(instruction: &Instruction) -> Result<Vec<u8>, Diagnostic> {
-    let operands: Vec<_> = instruction.operands.iter().map(Operand::core).collect();
+    if instruction
+        .operands
+        .iter()
+        .any(|op| matches!(op, Operand::Symbol(_) | Operand::RipRelative(_)))
+    {
+        return Err(Diagnostic::without_span(
+            "symbol references require the program API",
+        ));
+    }
+    let operands: Vec<_> = instruction
+        .operands
+        .iter()
+        .map(|op| op.core(|_| unreachable!()))
+        .collect();
     let (bytes, fixup) = encode::instruction_operands(instruction.opcode.mnemonic(), &operands)
         .map_err(Diagnostic::without_span)?;
     if fixup.is_some() {
@@ -312,7 +350,7 @@ pub fn render_instruction(instruction: &Instruction) -> Result<String, Diagnosti
     let args = instruction
         .operands
         .iter()
-        .map(Operand::asm)
+        .map(|op| op.asm(|_| unreachable!()))
         .collect::<Vec<_>>()
         .join(", ");
     Ok(if args.is_empty() {

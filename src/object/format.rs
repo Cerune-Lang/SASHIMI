@@ -71,7 +71,7 @@ fn elf(object: &Object) -> Vec<u8> {
     .iter()
     .map(|s| string(&mut section_names, s))
     .collect();
-    let has_data = !object.sections[2].is_empty();
+    let has_data = object.include_data || !object.sections[2].is_empty();
     if has_data {
         section_offsets.push(string(&mut section_names, ".data"));
     }
@@ -84,10 +84,10 @@ fn elf(object: &Object) -> Vec<u8> {
         section_names.as_slice(),
         &[],
     ];
-    let mut alignments = vec![16, 16, 8, 8, 1, 1, 1];
+    let mut alignments = vec![object.alignments[0], object.alignments[1], 8, 8, 1, 1, 1];
     if has_data {
         data.push(&object.sections[2]);
-        alignments.push(16);
+        alignments.push(object.alignments[2]);
     }
     let section_count = data.len() + 1;
     let mut bytes = vec![0; 64];
@@ -177,7 +177,11 @@ fn coff(object: &Object) -> Result<Vec<u8>, String> {
     if object.relocations.len() > u16::MAX as usize {
         return Err("COFF relocation count exceeds 65535".into());
     }
-    let section_count = if object.sections[2].is_empty() { 2 } else { 3 };
+    let section_count = if object.sections[2].is_empty() && !object.include_data {
+        2
+    } else {
+        3
+    };
     let length = 24u64
         + section_count as u64 * 40
         + object
@@ -269,11 +273,11 @@ fn coff(object: &Object) -> Result<Vec<u8>, String> {
         put(
             &mut bytes,
             start + 36,
-            match index {
-                0 => 0x60500020,
-                1 => 0x40500040,
-                _ => 0xc0500040,
-            },
+            (match index {
+                0 => 0x60000020,
+                1 => 0x40000040,
+                _ => 0xc0000040,
+            }) | ((object.alignments[index].trailing_zeros() as u64 + 1) << 20),
             4,
         );
     }

@@ -2,7 +2,7 @@
 
 [English](typed-assembly.en.md)
 
-段階1の単一命令APIは[実装済み範囲](typed-instructions.ja.md)を参照してください。この文書のProgram・Object・出自対応は後続の設計です。対象は現行x86-64の命令範囲とELF64/COFFです。Cerune言語への移植は[SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2)の別段階です。
+段階1の[単一命令API](typed-instructions.ja.md)と段階2の[Program・Object・出自対応](typed-program.ja.md)は実装済みです。Cerune側の型付き構築への移行は後続です。対象は現行x86-64の命令範囲とELF64/COFFです。Cerune言語への移植は[SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2)の別段階です。
 
 ## 目的と責務
 
@@ -34,7 +34,7 @@ ASMとObjectが共有するのは確定済み命令です。出自観測のた�
 
 parse.rsは未解決の `.L` / `cerune_` 名を拒否し、その他の未解決参照を外部シンボルにしています。これは現行テキスト入力の互換規則です。新コアへ名前の接頭辞による意味判定を持ち込みません。
 
-## 型付き入力案
+## 型付き入力
 
 `Program`は明示的なTarget、シンボル表、順序付きの項目列を持ちます。最初から任意ISA・任意セクションを一般化せず、Text・ReadOnlyData・Dataを対象にします。
 
@@ -52,7 +52,7 @@ parse.rsは未解決の `.L` / `cerune_` 名を拒否し、その他の未解決
 
 外部シンボルは明示宣言が必要です。参照先を名前から推測しません。命令の参照からfixupを作り、配置後に解決または再配置へ変換します。初版は現行のtext内参照に限定し、任意データ内ポインタ・任意再配置の公開APIは後続です。
 
-公開APIの形は次を出発点とします。正式なRust署名は実装時に確定します。
+公開APIは次のとおりです。詳細な契約は[Program API](typed-program.ja.md)を参照してください。
 
 - `render_asm(&Program)`：検証済みの命令・データをtargetに応じたASMへ表示する。
 - `assemble_program(&Program)`：ASM文字列を経由せず、Objectと対応表を返す。
@@ -70,7 +70,7 @@ parse.rsは未解決の `.L` / `cerune_` 名を拒否し、その他の未解決
 | 複数のOriginが同じ命令へ対応 | 同じ範囲を複数IDから参照できる |
 | Marker・長さ0のData・padding 0 | セクションと `start == end` の位置を保持。「記録なし」と区別 |
 | prologue・runtime・alignment | Syntheticを明示。呼出し元が付けたIDがあればその関係も保持 |
-| セクション切替・外部宣言 | EntryIdによる記録は持つが、架空のバイト範囲は作らない |
+| セクション切替・外部宣言 | セクション切替はEntryId、外部宣言はSymbolIdで記録し、架空のバイト範囲は作らない |
 | 解決済み参照・未解決外部参照 | 参照元EntryId、シンボル、変位フィールド、解決／再配置の種別を保持 |
 
 例として、Origin 7がtextの `[0, 3)` と `[8, 10)`、Origin 8のMarkerが `[10, 10)` に対応し、間の `[3, 8)` は合成paddingという結果を表せます。OriginIdはアセンブリ1回の入力内だけで解釈し、別Programとの同一性は保証しません。
@@ -102,7 +102,7 @@ Objectのヘッダ・シンボル表などを高水準ソースへ無理に帰�
 
 Cerune PR #184の失敗注入用Objectで、外部mallocへのjmpがELFのPC32再配置になり、Linux CIのPIEリンクに拒否されました。固定版のcallはPLT32ですが、jmpは同じ扱いではありません。通常のCerune生成は外部関数にcallを使います。このテストもABIに従うcallへ修正し、PIEを無効化せず検証します。
 
-型付き入力の再配置設計では、外部call・外部jmp・内部分岐・RIP相対データ参照を分けて検証します。外部jmpは現行の利用可能範囲として保証せず、再配置規則を実装・検証してから対応済みとします。
+型付きProgramは外部call・jmp・jccをPLT32にし、ASM表示でも@PLTを明示します。WindowsとLinux（PIE有効）でASM/Object双方のリンク・実行を検証しました。内部分岐・RIP相対データ参照も別に検証します。旧テキスト入口の外部jmpは互換性のためPC32のままです。
 
 ## 両リポジトリでの開発
 

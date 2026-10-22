@@ -23,6 +23,8 @@ jobs:
       - name: Check formatting
         run: cargo fmt --check
       - name: Run Rust tests
+        env:
+          SASHIMI_TEST_CLANG: clang
         run: cargo test --all-targets
       - name: Check API documentation examples
         run: cargo test --doc
@@ -30,3 +32,7 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: Run typed instruction example
         run: cargo run --example typed
+      - name: Generate Program artifacts for both targets
+        run: |
+          cargo run --example program -- x86_64-unknown-linux-gnu target/program-linux
+          cargo run --example program -- x86_64-pc-windows-msvc target/program-windows

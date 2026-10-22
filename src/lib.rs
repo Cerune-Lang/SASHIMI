@@ -40,6 +40,7 @@ pub fn assemble(source: &str, target: Target) -> Result<Vec<u8>, Diagnostic> {
 }
 
 pub mod typed;
+pub use object::program;
 
 #[cfg(test)]
 #[rustfmt::skip]

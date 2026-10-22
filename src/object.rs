@@ -1,6 +1,6 @@
 //! Ceruneが生成する限定されたASMを命令バイトへ符号化します。
 //! ソースの意味解析は繰り返さず、外部アセンブラへフォールバックしません。
-mod encode;
+pub(crate) mod encode;
 mod format;
 mod parse;
 #[cfg(test)]
@@ -18,7 +18,7 @@ struct Symbol {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct Fixup {
+pub(crate) struct Fixup {
     offset: usize,
     symbol: String,
     addend: i64,

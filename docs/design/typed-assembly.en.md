@@ -2,7 +2,7 @@
 
 [日本語](typed-assembly.ja.md)
 
-2026-10-23. **Design proposal, not implemented.** The current API is only `assemble(&str, Target)`; names below are provisional. Scope is the existing x86-64 instruction subset and ELF64/COFF. The Cerune-language port in [SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2) is a separate stage.
+See [implemented coverage](typed-instructions.en.md) for the stage-1 single-instruction API. Program/object/provenance remain later-stage design. Scope is the existing x86-64 instruction subset and ELF64/COFF. The Cerune-language port in [SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2) is a separate stage.
 
 ## Purpose and responsibilities
 

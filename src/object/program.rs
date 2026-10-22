@@ -67,6 +67,8 @@ pub enum EntryKind {
     Label(SymbolId),
     Instruction(Instruction),
     Data(Vec<u8>),
+    /// UTF-8 bytes followed by one NUL; embedded NUL bytes are retained.
+    CString(String),
     /// Exact little-endian bits, rendered as .long; no implicit alignment.
     Data32(u32),
     /// Exact little-endian bits, rendered as .quad; no implicit alignment.
@@ -347,6 +349,10 @@ fn layout(program: &Program) -> Result<Layout, ProgramDiagnostic> {
                 object.sections[index].extend(bytes);
             }
             EntryKind::Data(bytes) => object.sections[index].extend_from_slice(bytes),
+            EntryKind::CString(value) => {
+                object.sections[index].extend_from_slice(value.as_bytes());
+                object.sections[index].push(0);
+            }
             EntryKind::Data32(bits) => {
                 object.sections[index].extend_from_slice(&bits.to_le_bytes())
             }
@@ -542,6 +548,19 @@ pub fn render_asm(program: &Program) -> Result<String, ProgramDiagnostic> {
             EntryKind::Data(bytes) => {
                 for byte in bytes {
                     text.push_str(&format!(".byte {byte}\n"));
+                }
+            }
+            EntryKind::CString(value) => {
+                if value.bytes().all(|b| b == 10 || (32..127).contains(&b)) {
+                    let escaped = value
+                        .replace('\\', "\\\\")
+                        .replace('"', "\\\"")
+                        .replace('\n', "\\n");
+                    text.push_str(&format!(".asciz \"{escaped}\"\n"));
+                } else {
+                    for byte in value.bytes().chain(std::iter::once(0)) {
+                        text.push_str(&format!(".byte {byte}\n"));
+                    }
                 }
             }
             EntryKind::Data32(bits) => text.push_str(&format!(".long 0x{bits:08X}\n")),

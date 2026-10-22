@@ -10,7 +10,7 @@
 | --- | --- |
 | `Program::new(Target)` | Linux GNU／Windows MSVCのx86-64を明示。実行中OSから選ばない |
 | `declare(name, Linkage)` | Program内のSymbolIdを返す。Local／Globalは一度だけ定義必須、Externalは定義禁止 |
-| `push(EntryKind, Provenance)` | 入力順のEntryIdを返す。Section／Label／Instruction／Data／Align／Marker |
+| `push(EntryKind, Provenance)` | 入力順のEntryIdを返す。Section／Label／Instruction／Data／Data32／Data64／Align／Marker |
 | `Operand::Symbol`／`RipRelative` | 明示したシンボルへの分岐／RIP相対参照。文字列から意味を推測しない |
 | `assemble_program(&Program)` | Objectと項目・シンボル・参照の位置を返す |
 | `render_asm(&Program)` | 同じ入力を検証し、targetに適したAT&T形式ASMを返す |
@@ -26,6 +26,7 @@ IDは各入力配列の番号です。別Program間や配列を編集した前�
 | --- | --- |
 | セクション | Text／ReadOnlyData／Data。ラベル・命令・データ・整列・Markerの前に明示選択が必要 |
 | データ | 生バイトを保持。NUL追加、改行変換、Unicode正規化なし。空Dataセクションも保持 |
+| Data32／Data64 | u32／u64のビット列を4／8バイトのlittle-endianで保持し、ASMは.long／.quadで幅を表示。値変換・暗黙の整列なし。浮動小数の意味は呼出し元が持つ |
 | Align | 2の冪の指数。ELFは0〜16、COFFは0〜13。Textは0x90、他は0で埋め、Objectのセクション整列にも反映。Objectの最小整列は16バイト |
 | 分岐 | call、jmp、16条件のjcc。固定の32bit変位で符号化し、Text内参照は直接解決。短い分岐への最適化なし |
 | ELF | 外部分岐はPLT32、他セクション・外部データへのRIP参照はPC32。ASMの外部分岐にも `@PLT` を明示 |

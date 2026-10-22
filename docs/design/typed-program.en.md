@@ -10,7 +10,7 @@ Stage 2 of the [overall design](typed-assembly.en.md). One `Program` produces as
 | --- | --- |
 | `Program::new(Target)` | Explicit x86-64 Linux GNU or Windows MSVC target; never inferred from the running OS |
 | `declare(name, Linkage)` | Returns a Program-local SymbolId. Local/Global require exactly one definition; External forbids definitions |
-| `push(EntryKind, Provenance)` | Returns an input-order EntryId: Section, Label, Instruction, Data, Align or Marker |
+| `push(EntryKind, Provenance)` | Returns an input-order EntryId: Section, Label, Instruction, Data, Data32, Data64, Align or Marker |
 | `Operand::Symbol` / `RipRelative` | Explicit branch / RIP-relative symbol references; no name-based meaning |
 | `assemble_program(&Program)` | Returns object bytes and entry, symbol and reference locations |
 | `render_asm(&Program)` | Validates the same input and renders target-specific AT&T assembly |
@@ -26,6 +26,7 @@ Symbol names follow `[A-Za-z_.][A-Za-z0-9_.]*`, excluding a lone `.`. Duplicate 
 | --- | --- |
 | Sections | Text, ReadOnlyData, Data; explicitly select one before labels, instructions, data, alignment or markers |
 | Data | Preserve raw bytes; no implicit NUL, newline conversion or Unicode normalization. Empty Data sections are retained |
+| Data32 / Data64 | Store u32/u64 bit patterns as 4/8 little-endian bytes and render .long/.quad. No value conversion or implicit alignment; floating-point meaning belongs to the caller |
 | Align | Power-of-two exponent: 0–16 for ELF, 0–13 for COFF. Fill Text with 0x90 and other sections with zero; also set object section alignment. Minimum object alignment is 16 bytes |
 | Branches | call, jmp and 16 jcc conditions, using fixed 32-bit displacements. Resolve Text references directly; no short-branch optimization |
 | ELF | PLT32 for external branches; PC32 for RIP references to other sections or external data. Assembly also explicitly uses `@PLT` for external branches |

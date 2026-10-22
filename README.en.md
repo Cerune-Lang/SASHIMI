@@ -8,7 +8,7 @@ A Rust assembler extracted from Cerune, with no external crate dependencies. It 
 | --- | --- |
 | `assemble(&str, Target)`, explicit targets, instruction encoding, labels, relocations, objects and [typed instructions](docs/design/typed-instructions.en.md), [Programs/objects/provenance](docs/design/typed-program.en.md) | CLI, general GNU assembler compatibility, dynamic linking and stable APIs |
 
-Experimental and unreleased. Windows/Linux validation covers 19 unit tests, external ASM/Object link/run comparisons and API documentation examples. Cerune already uses a pinned dependency with migration comparisons.
+Experimental and unreleased. Windows/Linux validation covers 20 unit tests, external ASM/Object link/run comparisons and API documentation examples. Cerune already uses a pinned dependency with migration comparisons.
 
 ```rust
 use sashimi_assembler::{assemble, Target};

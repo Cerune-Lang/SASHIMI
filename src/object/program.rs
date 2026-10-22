@@ -67,6 +67,10 @@ pub enum EntryKind {
     Label(SymbolId),
     Instruction(Instruction),
     Data(Vec<u8>),
+    /// Exact little-endian bits, rendered as .long; no implicit alignment.
+    Data32(u32),
+    /// Exact little-endian bits, rendered as .quad; no implicit alignment.
+    Data64(u64),
     /// Power-of-two exponent; maximum 16 (ELF), 13 (COFF).
     Align(u8),
     Marker,
@@ -343,6 +347,12 @@ fn layout(program: &Program) -> Result<Layout, ProgramDiagnostic> {
                 object.sections[index].extend(bytes);
             }
             EntryKind::Data(bytes) => object.sections[index].extend_from_slice(bytes),
+            EntryKind::Data32(bits) => {
+                object.sections[index].extend_from_slice(&bits.to_le_bytes())
+            }
+            EntryKind::Data64(bits) => {
+                object.sections[index].extend_from_slice(&bits.to_le_bytes())
+            }
             EntryKind::Align(exponent) => {
                 let maximum = if program.target == Target::X86_64PcWindowsMsvc {
                     13
@@ -534,6 +544,8 @@ pub fn render_asm(program: &Program) -> Result<String, ProgramDiagnostic> {
                     text.push_str(&format!(".byte {byte}\n"));
                 }
             }
+            EntryKind::Data32(bits) => text.push_str(&format!(".long 0x{bits:08X}\n")),
+            EntryKind::Data64(bits) => text.push_str(&format!(".quad 0x{bits:016X}\n")),
             EntryKind::Align(n) => text.push_str(&format!(".p2align {n}\n")),
             EntryKind::Marker => {}
         }

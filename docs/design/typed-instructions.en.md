@@ -32,24 +32,24 @@ Operands follow AT&T source-before-destination order. GPR numbers 0–7 represen
 | Implemented | Details |
 | --- | --- |
 | Types | Opcode, Instruction, Operand, Register, Width, Memory, Scale |
-| 81 Opcodes | Moves, integer arithmetic, comparisons, shifts, setcc, SSE, conversions, push/pop, ret/cqto/ud2. [Exact enumeration](../../src/typed.rs) |
+| 82 reference-free Opcodes | Moves, integer arithmetic, comparisons, shifts, setcc, SSE, conversions, push/pop, ret/cqto/ud2 and int $0x29. [Exact enumeration](../../src/typed.rs) |
 | Direct encoding | Registers, immediates, base/index memory; no assembly text or parser |
 | Assembly rendering | Validate before rendering, without mutating input |
 | Diagnostics | Reject invalid register numbers, widths, forms and immediates using the existing Diagnostic |
 
-Typed calls/jumps/conditional branches, RIP-relative symbols, int, Program, sections, labels, data, objects and OriginId are not implemented. Existing `assemble(&str, Target)` retains its coverage. Cerune production is not switched to this partial API.
+Calls/jumps/conditional branches, RIP-relative symbols, sections, labels, data, objects and OriginId are handled by the [Program API](typed-program.en.md). The single-instruction API rejects symbol references. Existing `assemble(&str, Target)` retains its coverage. Cerune production is not switched to this partial API.
 
-An isolated x86-64 instruction has no OS ABI or object format, so this API has no Target argument. Future Program/object operations will require an explicit Target. There is no API to execute the returned bytes.
+An isolated x86-64 instruction has no OS ABI or object format, so this API has no Target argument. Program/object operations require an explicit Target. There is no API to execute the returned bytes.
 
 ## Shared implementation and validation
 
 Pass the fixed mnemonic selected by Opcode and typed operands directly to existing validation/encoding functions. There is no arbitrary mnemonic-string input. The legacy text entry point parses first, then uses the same functions. Rendering validates as well, so malformed instructions are not successfully displayed.
 
-- Every Opcode has a valid case compared with the extraction in both object formats.
-- 7,452 instruction/operand combinations compare acceptance, rejection and encoding.
+- Every reference-free Opcode has a valid case compared with the extraction in both object formats.
+- 9,200 instruction/operand combinations compare acceptance, rejection and encoding.
 - Twelve independent byte expectations, REX/SIB and immediate/displacement boundaries, invalid widths and every GPR number are tested.
 - Repeated rendering/encoding preserves input and output; existing labels, relocations and diagnostics remain unchanged.
 
-Agreement with the extraction cannot rule out shared bugs. The twelve byte expectations were also checked with LLVM's assembler. The external-jump PIE limitation remains as documented in the [overall design](typed-assembly.en.md).
+Agreement with the extraction cannot rule out shared bugs. The twelve byte expectations were also checked with LLVM's assembler. The legacy text API retains its external-jump PIE limitation. The [Program API](typed-program.en.md) implements and tests PLT32 for external branches.
 
 Original sources live in [fixed fixtures](../../tests/fixtures/extraction/README.en.md). SOURCE_SNAPSHOT.json hashes are unchanged; verification now targets the fixtures.

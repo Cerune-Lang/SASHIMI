@@ -99,6 +99,7 @@ fn representative(opcode: Opcode) -> Vec<Operand> {
         | Opcode::Div64
         | Opcode::SignedDiv64
         | Opcode::Inc64 => vec![r(9, Width::Qword)],
+        Opcode::Interrupt => vec![Operand::Immediate(0x29)],
         Opcode::MovAbs64 => vec![Operand::Immediate(42), r(9, Width::Qword)],
         Opcode::ZeroExtend8To32 => vec![r(8, Width::Byte), r(9, Width::Dword)],
         Opcode::ZeroExtend8To64 => vec![r(8, Width::Byte), r(9, Width::Qword)],
@@ -131,6 +132,9 @@ fn representative(opcode: Opcode) -> Vec<Operand> {
 #[test]
 fn every_opcode_has_a_valid_case_matching_the_extraction() {
     for &opcode in Opcode::ALL {
+        if opcode.mnemonic().starts_with('j') || opcode == Opcode::Call {
+            continue;
+        }
         check(opcode, representative(opcode));
     }
 }
@@ -169,7 +173,7 @@ fn typed_and_text_validation_agree_for_operand_combinations() {
                 opcode.mnemonic(),
                 operands
                     .iter()
-                    .map(Operand::asm)
+                    .map(|op| op.asm(|_| unreachable!()))
                     .collect::<Vec<_>>()
                     .join(", ")
             );

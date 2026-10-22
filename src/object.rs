@@ -3,6 +3,7 @@
 pub(crate) mod encode;
 mod format;
 mod parse;
+pub mod program;
 #[cfg(test)]
 mod tests;
 
@@ -27,6 +28,8 @@ pub(crate) struct Fixup {
 
 struct Object {
     sections: [Vec<u8>; 3],
+    alignments: [usize; 3],
+    include_data: bool,
     symbols: Vec<Symbol>,
     relocations: Vec<Fixup>,
 }

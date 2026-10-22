@@ -2,7 +2,7 @@
 
 [日本語](typed-assembly.ja.md)
 
-See [implemented coverage](typed-instructions.en.md) for the stage-1 single-instruction API. Program/object/provenance remain later-stage design. Scope is the existing x86-64 instruction subset and ELF64/COFF. The Cerune-language port in [SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2) is a separate stage.
+Stage 1 [single-instruction API](typed-instructions.en.md) and stage 2 [Program/object/provenance](typed-program.en.md) are implemented. Migrating Cerune to typed construction is next. Scope is the existing x86-64 instruction subset and ELF64/COFF. The Cerune-language port in [SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2) is a separate stage.
 
 ## Purpose and responsibilities
 
@@ -34,7 +34,7 @@ The two outputs share selected instructions. Observing provenance must not chang
 
 The current parser rejects unresolved `.L` and `cerune_` names and treats other unresolved references as external symbols. Preserve this rule at the legacy text entry point; do not introduce prefix-based semantics into the new core.
 
-## Proposed input
+## Typed input
 
 A `Program` contains an explicit Target, symbol table and ordered entries. Initially support Text, ReadOnlyData and Data, without generalizing to arbitrary ISAs or sections.
 
@@ -52,7 +52,7 @@ Even if immediates use a wide integer representation, encoding must check the ra
 
 Require external declarations instead of guessing from names. Instruction references produce fixups, which layout resolves or converts into relocations. Initially retain the existing text-section reference forms; arbitrary data pointers and arbitrary relocation input are deferred.
 
-Initial API shapes, with exact Rust signatures to be decided during implementation:
+Public operations are listed below; see the [Program API](typed-program.en.md) for the implemented contract.
 
 - `render_asm(&Program)`: validate and render target-specific assembly.
 - `assemble_program(&Program)`: produce object and mappings without assembly text.
@@ -70,7 +70,7 @@ Locations are section-relative byte offsets and half-open ranges `[start, end)`.
 | Multiple origins share an instruction | Allow multiple IDs to refer to the same range |
 | Marker, empty Data, zero padding | Preserve section and `start == end`; distinguish from no record |
 | Prologue, runtime, alignment | Explicit Synthetic; also preserve caller-assigned IDs when supplied |
-| Section selection, external declaration | Preserve EntryId records without inventing byte ranges |
+| Section selection, external declaration | Use EntryId for section selections and SymbolId for external declarations; invent no byte ranges |
 | Resolved references and external relocations | Record source EntryId, symbol, displacement field, and resolution/relocation kind |
 
 For example, Origin 7 can map to text ranges `[0, 3)` and `[8, 10)`, Origin 8 can mark `[10, 10)`, and `[3, 8)` can be synthetic padding. IDs are interpreted within one assembly input; identity across Programs is not guaranteed.
@@ -102,7 +102,7 @@ Preserve `SOURCE_SNAPSHOT.json` as extraction history. Before modifying implemen
 
 An allocation-failure object fixture in Cerune PR #184 used a jump to external malloc. The pinned encoder emitted ELF PC32 and Linux CI rejected the PIE link. Calls use PLT32, but jumps do not receive the same treatment. Normal Cerune output calls external functions; the shared ASM/object fixture is being changed to an ABI-compliant call and tested without disabling PIE.
 
-Typed relocation work must distinguish external calls, external jumps, internal branches and RIP-relative data references. Do not promise external-jump support until its relocation rules are implemented and validated.
+Typed Programs use PLT32 for external calls, jumps and conditional branches, and explicitly render @PLT in assembly. ASM/Object linking and execution are tested on Windows and Linux with PIE enabled. Internal branches and RIP-relative data references are tested separately. The legacy text entry point retains PC32 external jumps for compatibility.
 
 ## Coordinating repositories
 

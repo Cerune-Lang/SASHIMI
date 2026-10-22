@@ -347,3 +347,47 @@ fn symbol_declaration_order_does_not_change_object_order() {
         assert_eq!(assemble_program(&p).unwrap().object, expected);
     }
 }
+
+#[test]
+fn scalar_data_preserves_width_bits_ranges_and_explicit_alignment() {
+    for target in TARGETS {
+        for section in [Section::Text, Section::ReadOnlyData, Section::Data] {
+            let mut p = Program::new(target);
+            push(&mut p, EntryKind::Section(section));
+            push(&mut p, EntryKind::Data(vec![0x11]));
+            let a = push(&mut p, EntryKind::Data32(0x8000_0001));
+            let b = push(&mut p, EntryKind::Data64(0xfff8_0123_4567_89ab));
+            let c = push(&mut p, EntryKind::Data32(u32::MAX));
+            let d = push(&mut p, EntryKind::Data64(u64::MAX));
+            let artifact = assemble_program(&p).unwrap();
+            for (entry, start, end) in [(a, 1, 5), (b, 5, 13), (c, 13, 17), (d, 17, 25)] {
+                assert_eq!(
+                    artifact.entries[entry.0].range,
+                    Some(ByteRange {
+                        section,
+                        start,
+                        end
+                    })
+                );
+            }
+            let asm = render_asm(&p).unwrap();
+            assert!(asm.contains(".long 0x80000001\n"));
+            assert!(asm.contains(".quad 0xFFF80123456789AB\n"));
+            assert_eq!(
+                artifact.object,
+                crate::extracted::assemble(&asm, target).unwrap()
+            );
+            let mut raw = p.clone();
+            raw.entries[a.0].kind = EntryKind::Data(vec![1, 0, 0, 128]);
+            raw.entries[b.0].kind =
+                EntryKind::Data(vec![0xab, 0x89, 0x67, 0x45, 0x23, 1, 0xf8, 0xff]);
+            raw.entries[c.0].kind = EntryKind::Data(vec![255; 4]);
+            raw.entries[d.0].kind = EntryKind::Data(vec![255; 8]);
+            assert_eq!(assemble_program(&raw).unwrap(), artifact);
+            for e in &mut raw.entries {
+                e.provenance = Provenance::synthetic();
+            }
+            assert_eq!(assemble_program(&raw).unwrap().object, artifact.object);
+        }
+    }
+}

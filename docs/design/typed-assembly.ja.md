@@ -2,7 +2,7 @@
 
 [English](typed-assembly.en.md)
 
-2026-10-23。**実装前の設計案**です。現行APIは `assemble(&str, Target)` のみで、この文書の型名・API名は未実装です。対象は現行x86-64の命令範囲とELF64/COFFです。Cerune言語への移植は[SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2)の別段階です。
+段階1の単一命令APIは[実装済み範囲](typed-instructions.ja.md)を参照してください。この文書のProgram・Object・出自対応は後続の設計です。対象は現行x86-64の命令範囲とELF64/COFFです。Cerune言語への移植は[SASHIMI #2](https://github.com/Cerune-Lang/SASHIMI/issues/2)の別段階です。
 
 ## 目的と責務
 

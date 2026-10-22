@@ -1,13 +1,13 @@
 use super::Fixup;
 
 #[derive(Clone, Copy, Debug)]
-struct Register {
-    code: u8,
-    width: u8,
-    vector: bool,
+pub(crate) struct Register {
+    pub(crate) code: u8,
+    pub(crate) width: u8,
+    pub(crate) vector: bool,
 }
 #[derive(Debug)]
-enum Operand {
+pub(crate) enum Operand {
     Register(Register),
     Immediate(i128),
     Memory {
@@ -257,8 +257,15 @@ fn condition(name: &str) -> Option<u8> {
 pub(super) fn instruction(line: &str) -> Result<(Vec<u8>, Option<Fixup>), String> {
     let (name, args) = line.split_once(' ').unwrap_or((line, ""));
     let args = operands(args.trim())?;
-    validate(name, &args)?;
-    let mut result = encode(name, &args)?;
+    instruction_operands(name, &args)
+}
+
+pub(crate) fn instruction_operands(
+    name: &str,
+    args: &[Operand],
+) -> Result<(Vec<u8>, Option<Fixup>), String> {
+    validate(name, args)?;
+    let mut result = encode(name, args)?;
     if let Some(fixup) = &mut result.1 {
         fixup.addend = fixup.offset as i64 - result.0.len() as i64;
     }

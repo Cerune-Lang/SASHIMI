@@ -98,6 +98,12 @@ The goal is all currently supported instruction forms. Document intermediate gap
 
 Preserve `SOURCE_SNAPSHOT.json` as extraction history. Before modifying implementation files, save the original four files in fixed fixtures and point fidelity verification there. Do not update hashes of changed implementation files and claim they still match the extraction.
 
+## Existing external jumps and PIE linking
+
+An allocation-failure object fixture in Cerune PR #184 used a jump to external malloc. The pinned encoder emitted ELF PC32 and Linux CI rejected the PIE link. Calls use PLT32, but jumps do not receive the same treatment. Normal Cerune output calls external functions; the shared ASM/object fixture is being changed to an ABI-compliant call and tested without disabling PIE.
+
+Typed relocation work must distinguish external calls, external jumps, internal branches and RIP-relative data references. Do not promise external-jump support until its relocation rules are implemented and validated.
+
 ## Coordinating repositories
 
 Use an independent SASHIMI PR for API changes and tests. Pin its published full commit ID in Cerune's Cargo.toml and both Cargo.lock files, and link the SASHIMI PR from the Cerune PR. State explicitly when dependencies remain unmerged.

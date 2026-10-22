@@ -391,3 +391,37 @@ fn scalar_data_preserves_width_bits_ranges_and_explicit_alignment() {
         }
     }
 }
+
+#[test]
+fn terminated_strings_preserve_bytes_readable_formats_and_ranges() {
+    for target in TARGETS {
+        for value in [
+            "",
+            "%.9g",
+            "%.17g",
+            "quote\" slash\\ LF\n NUL\0",
+            "\u{65e5}\r\t\u{7f}",
+        ] {
+            let mut p = Program::new(target);
+            push(&mut p, EntryKind::Section(Section::ReadOnlyData));
+            let entry = push(&mut p, EntryKind::CString(value.to_owned()));
+            let saved = p.clone();
+            let artifact = assemble_program(&p).unwrap();
+            let range = artifact.entries[entry.0].range.unwrap();
+            assert_eq!(range.end - range.start, value.len() as u64 + 1);
+            let mut bytes = p.clone();
+            bytes.entries[entry.0].kind =
+                EntryKind::Data(value.bytes().chain(std::iter::once(0)).collect());
+            assert_eq!(assemble_program(&bytes).unwrap(), artifact);
+            let asm = render_asm(&p).unwrap();
+            if value.starts_with('%') {
+                assert!(asm.contains(&format!(".asciz \"{value}\"")));
+            }
+            assert_eq!(
+                crate::extracted::assemble(&asm, target).unwrap(),
+                artifact.object
+            );
+            assert_eq!(p, saved);
+        }
+    }
+}

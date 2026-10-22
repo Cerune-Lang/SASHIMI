@@ -72,3 +72,5 @@ Unit tests check object equality with the frozen extraction on both targets, all
 Cerune instruction selection and runtime helpers still use the existing assembly-text input. Next migrate them to typed Program construction and compare the existing 135 examples, MIR/SSA, origin annotations, failure diagnostics and I/O ordering.
 
 Arbitrary sections, pointer relocations in data, indirect calls/jumps, GOT/TLS, dynamic linking, linked-address mappings, stable APIs and a CLI remain unsupported. The library never invokes an external linker or executor implicitly.
+
+`CString(String)` appends one NUL to the UTF-8 bytes, preserving embedded NULs without normalization or implicit alignment. ASCII format strings render readably as escaped `.asciz`; embedded NULs, non-ASCII bytes and control characters other than LF use exact `.byte` sequences.

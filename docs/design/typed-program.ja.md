@@ -72,3 +72,5 @@ Windowsではtargetを `x86_64-pc-windows-msvc` にし、対応するclang/linke
 Ceruneの命令選択・runtime補助はまだ既存ASM入力を使います。次は型付きProgram構築へ移し、既存135例・MIR/SSA・出自注釈・失敗診断・I/O順を比較します。
 
 任意セクション、データ内ポインタ再配置、間接call/jmp、GOT/TLS、動的リンク、リンク後アドレスの対応表、安定API、CLIは未対応です。外部リンカや実行器をライブラリから暗黙に呼び出しません。
+
+`CString(String)` はUTF-8バイト列の末尾へNULを1個追加します。内部のNULも保持し、正規化や暗黙の整列は行いません。ASCIIの書式文字列はエスケープした `.asciz` として読み取れる形で表示し、内部NUL・非ASCII・LF以外の制御文字は `.byte` 列で厳密に表示します。

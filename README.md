@@ -8,7 +8,7 @@ Ceruneから切り出した、外部crate依存のないRust製アセンブラ�
 | --- | --- |
 | `assemble(&str, Target)`、明示target、命令符号化・ラベル・再配置・Object出力、[型付き命令](docs/design/typed-instructions.ja.md)・[Program/Object・出自対応表](docs/design/typed-program.ja.md) | CLI、汎用GNU assembler互換、動的リンク、安定API |
 
-実験段階・未リリースです。Windows/Linuxで単体テスト20件、ASM/Objectの外部リンク・実行比較、API文書例を検証します。Ceruneは固定コミットへの接続と移行比較を導入済みです。
+実験段階・未リリースです。Windows/Linuxで単体テスト21件、ASM/Objectの外部リンク・実行比較、API文書例を検証します。Ceruneは固定コミットへの接続と移行比較を導入済みです。
 
 ```rust
 use sashimi_assembler::{assemble, Target};

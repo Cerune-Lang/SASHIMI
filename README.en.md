@@ -1,12 +1,12 @@
-# SASHIMI
+# Sashimi
 
 **A small Rust x86-64 assembler that tracks where generated instructions and data came from.**
 
 [日本語](README.md)
 
-SASHIMI builds assembly text and ELF64/COFF object files from typed instructions, symbols, and data. It can associate caller-provided `OriginId` values with the **section-relative byte ranges** of generated instructions and data.
+Sashimi builds assembly text and ELF64/COFF object files from typed instructions, symbols, and data. It can associate caller-provided `OriginId` values with the **section-relative byte ranges** of generated instructions and data.
 
-Originally extracted from [Cerune](https://github.com/Cerune-Lang/Cerune)'s native code generator, SASHIMI does not depend on Cerune's IR or ABI. It has no external crate dependencies.
+Originally extracted from [Cerune](https://github.com/Cerune-Lang/Cerune)'s native code generator, Sashimi does not depend on Cerune's IR or ABI. It has no external crate dependencies.
 
 > **Status: experimental, unstable API.** Targets x86-64 Linux (ELF64) and Windows (COFF). It is not a drop-in GNU assembler, linker, JIT, or runtime. It has not been published to crates.io.
 
@@ -31,15 +31,15 @@ Caller (owns instruction selection, ABI, runtime, source mapping)
                                 + entry, symbol, reference locations
 ```
 
-SASHIMI handles **instruction/operand validation, encoding, layout, relocation, and object writing**. The caller chooses instructions and calling conventions, maps source locations to `OriginId`, and handles linking and execution.
+Sashimi handles **instruction/operand validation, encoding, layout, relocation, and object writing**. The caller chooses instructions and calling conventions, maps source locations to `OriginId`, and handles linking and execution.
 
 ## Try it
 
 Clone the repository and run the included Rust examples:
 
 ```sh
-git clone https://github.com/Cerune-Lang/SASHIMI.git
-cd SASHIMI
+git clone https://github.com/Cerune-Lang/Sashimi.git
+cd Sashimi
 
 # Show a typed instruction as assembly and machine-code bytes
 cargo run --example typed
@@ -57,7 +57,7 @@ clang -fPIE -pie target/program-linux/program.s -o target/program-linux/from-asm
 ./target/program-linux/from-asm
 ```
 
-For Windows, specify `x86_64-pc-windows-msvc` and link with an appropriate toolchain. **SASHIMI itself does not contain a linker or CLI**; these commands run bundled Rust examples.
+For Windows, specify `x86_64-pc-windows-msvc` and link with an appropriate toolchain. **Sashimi itself does not contain a linker or CLI**; these commands run bundled Rust examples.
 
 ### Use it from Rust
 
@@ -65,7 +65,7 @@ The crate is not published. You can use the Git repository as a dependency; pin 
 
 ```toml
 [dependencies]
-sashimi-assembler = { git = "https://github.com/Cerune-Lang/SASHIMI.git" }
+sashimi-assembler = { git = "https://github.com/Cerune-Lang/Sashimi.git" }
 ```
 
 This minimal typed `Program` returns 42. It generates **ASM and an object from the same input**, then shows where an instruction ended up in the machine-code section.
@@ -118,7 +118,7 @@ retq
 
 The `movabsq` instruction encodes to `48 b8 2a 00 00 00 00 00 00 00` (10 bytes). The caller-assigned `OriginId(7)` maps to **`[0, 10)` in the `.text` section**. The `retq` entry is separately marked as synthetic.
 
-`artifact.entries` stores **section-relative offsets in SASHIMI's generated object**, not absolute object-file offsets or linked addresses. For more detail, see the [single-instruction `typed` API](docs/design/typed-instructions.en.md) and the full [`examples/program.rs`](examples/program.rs), which includes branches and relocations.
+`artifact.entries` stores **section-relative offsets in Sashimi's generated object**, not absolute object-file offsets or linked addresses. For more detail, see the [single-instruction `typed` API](docs/design/typed-instructions.en.md) and the full [`examples/program.rs`](examples/program.rs), which includes branches and relocations.
 
 
 ## Scope and limitations
@@ -144,14 +144,14 @@ python3 scripts/verify_snapshot.py
 
 In PowerShell, first set `$env:SASHIMI_TEST_CLANG = 'clang'`. Without Clang configured, external link/run comparisons are skipped.
 
-Cerune **now builds a typed SASHIMI `Program` from native LIR and produces ASM and objects from that same program** ([Cerune PR #191](https://github.com/Cerune-Lang/Cerune/pull/191)). The migration compared generated objects and linked execution against the earlier emitter. This establishes migration equivalence, not a proof that the entire encoder is correct.
+Cerune **now builds a typed Sashimi `Program` from native LIR and produces ASM and objects from that same program** ([Cerune PR #191](https://github.com/Cerune-Lang/Cerune/pull/191)). The migration compared generated objects and linked execution against the earlier emitter. This establishes migration equivalence, not a proof that the entire encoder is correct.
 
 ## Design and roadmap
 
 - [Typed assembly and generated locations](docs/design/typed-assembly.en.md)
 - [Typed single-instruction API](docs/design/typed-instructions.en.md)
 - [Program/object/provenance API](docs/design/typed-program.en.md)
-- [Plan to port parts of SASHIMI into Cerune (Issue #2)](https://github.com/Cerune-Lang/SASHIMI/issues/2)
+- [Plan to port parts of Sashimi into Cerune (Issue #2)](https://github.com/Cerune-Lang/Sashimi/issues/2)
 
 ## License
 

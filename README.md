@@ -68,35 +68,58 @@ Windowsは`x86_64-pc-windows-msvc`を指定し、対応するツールチェー�
 sashimi-assembler = { git = "https://github.com/Cerune-Lang/SASHIMI.git" }
 ```
 
-型付き`Program`からObjectと出自対応を取り出す最小例です。
+型付き`Program`で「42を返す」x86-64の命令を作り、**同じ入力からASMとObjectを生成し、機械語の位置を確認する**最小例です。
 
 ```rust
 use sashimi_assembler::{
     Target,
     program::{assemble_program, render_asm, EntryKind, Linkage, OriginId,
               Program, Provenance, Section},
-    typed::{Instruction, Opcode},
+    typed::{Instruction, Opcode, Operand, Register, Width},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = Program::new(Target::X86_64UnknownLinuxGnu);
     let main = p.declare("main", Linkage::Global);
+    let rax = Register::gpr(0, Width::Qword)?;
+
     p.push(EntryKind::Section(Section::Text), Provenance::synthetic());
     p.push(EntryKind::Label(main), Provenance::synthetic());
     p.push(
+        EntryKind::Instruction(Instruction::new(
+            Opcode::MovAbs64,
+            vec![Operand::Immediate(42), rax.into()],
+        )),
+        Provenance::source(OriginId(7)),
+    );
+    p.push(
         EntryKind::Instruction(Instruction::new(Opcode::Ret, vec![])),
-        Provenance::source(OriginId(1)),
+        Provenance::synthetic(),
     );
 
     let artifact = assemble_program(&p)?;
     std::fs::write("main.o", &artifact.object)?;
     println!("{}", render_asm(&p)?);
-    println!("{:#?}", artifact.entries);
+
+    let tracked = artifact.entries.iter()
+        .find(|entry| entry.provenance.origins.contains(&OriginId(7)))
+        .expect("the movabs instruction has OriginId(7)");
+    println!("{:?}", tracked.range);
     Ok(())
 }
 ```
 
-この例の`OriginId(1)`は、`ret`命令の生成位置に対応します。`artifact.entries`の範囲は**生成されたObjectのセクション内オフセット**であり、Objectファイル内位置やリンク後アドレスではありません。単一命令だけを扱う[`typed` API](docs/design/typed-instructions.ja.md)も利用できます。
+生成されるASMの主要部分は次の2命令です（実際の出力にはシンボルや出自の注釈も付きます）。
+
+```asm
+movabsq $42, %rax
+retq
+```
+
+`movabsq`の機械語は`48 b8 2a 00 00 00 00 00 00 00`（10バイト）。呼出し元が付けた`OriginId(7)`は、この命令の**`.text`セクション内の`[0, 10)`**に対応します。`retq`は合成項目（`synthetic`）として別に記録されます。
+
+`artifact.entries`に入るのは、**SASHIMIが生成したObjectのセクション内オフセット**です。Objectファイル内の絶対位置やリンク後アドレスではありません。単一命令だけを扱う[`typed` API](docs/design/typed-instructions.ja.md)と、分岐・再配置を含む[`examples/program.rs`](examples/program.rs)も参照してください。
+
 
 ## 対応範囲と制限
 

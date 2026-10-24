@@ -68,35 +68,58 @@ The crate is not published. You can use the Git repository as a dependency; pin 
 sashimi-assembler = { git = "https://github.com/Cerune-Lang/SASHIMI.git" }
 ```
 
-Here is a minimal typed `Program` that emits an object and exposes origin locations:
+This minimal typed `Program` returns 42. It generates **ASM and an object from the same input**, then shows where an instruction ended up in the machine-code section.
 
 ```rust
 use sashimi_assembler::{
     Target,
     program::{assemble_program, render_asm, EntryKind, Linkage, OriginId,
               Program, Provenance, Section},
-    typed::{Instruction, Opcode},
+    typed::{Instruction, Opcode, Operand, Register, Width},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut p = Program::new(Target::X86_64UnknownLinuxGnu);
     let main = p.declare("main", Linkage::Global);
+    let rax = Register::gpr(0, Width::Qword)?;
+
     p.push(EntryKind::Section(Section::Text), Provenance::synthetic());
     p.push(EntryKind::Label(main), Provenance::synthetic());
     p.push(
+        EntryKind::Instruction(Instruction::new(
+            Opcode::MovAbs64,
+            vec![Operand::Immediate(42), rax.into()],
+        )),
+        Provenance::source(OriginId(7)),
+    );
+    p.push(
         EntryKind::Instruction(Instruction::new(Opcode::Ret, vec![])),
-        Provenance::source(OriginId(1)),
+        Provenance::synthetic(),
     );
 
     let artifact = assemble_program(&p)?;
     std::fs::write("main.o", &artifact.object)?;
     println!("{}", render_asm(&p)?);
-    println!("{:#?}", artifact.entries);
+
+    let tracked = artifact.entries.iter()
+        .find(|entry| entry.provenance.origins.contains(&OriginId(7)))
+        .expect("the movabs instruction has OriginId(7)");
+    println!("{:?}", tracked.range);
     Ok(())
 }
 ```
 
-Here `OriginId(1)` identifies the generated `ret` instruction. Ranges in `artifact.entries` are **section offsets in SASHIMI's generated object**, not object-file byte positions or linked addresses. You can also use the lower-level [typed single-instruction API](docs/design/typed-instructions.en.md).
+The main part of the generated assembly has two instructions (the actual output also includes symbol and origin annotations):
+
+```asm
+movabsq $42, %rax
+retq
+```
+
+The `movabsq` instruction encodes to `48 b8 2a 00 00 00 00 00 00 00` (10 bytes). The caller-assigned `OriginId(7)` maps to **`[0, 10)` in the `.text` section**. The `retq` entry is separately marked as synthetic.
+
+`artifact.entries` stores **section-relative offsets in SASHIMI's generated object**, not absolute object-file offsets or linked addresses. For more detail, see the [single-instruction `typed` API](docs/design/typed-instructions.en.md) and the full [`examples/program.rs`](examples/program.rs), which includes branches and relocations.
+
 
 ## Scope and limitations
 

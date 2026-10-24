@@ -1,10 +1,10 @@
-# SASHIMI
+# Sashimi
 
 **命令の生成からObjectのバイト位置まで追える、Rust製の小さなx86-64アセンブラ。**
 
 [English](README.en.md)
 
-SASHIMIは、型付きの命令・シンボル・データから、アセンブリ表示とELF64／COFFオブジェクトを生成するライブラリです。入力に付けた`OriginId`と、生成した命令・データの**セクション内バイト範囲**を対応付けられます。
+Sashimiは、型付きの命令・シンボル・データから、アセンブリ表示とELF64／COFFオブジェクトを生成するライブラリです。入力に付けた`OriginId`と、生成した命令・データの**セクション内バイト範囲**を対応付けられます。
 
 もともとは[Cerune](https://github.com/Cerune-Lang/Cerune)のNativeコード生成から切り出したものですが、特定の言語のIRやABIには依存しません。外部crateへの依存もありません。
 
@@ -31,15 +31,15 @@ SASHIMIは、型付きの命令・シンボル・データから、アセンブ�
                                      + 出自・シンボル・参照の対応表
 ```
 
-SASHIMIが担当するのは、**命令・オペランドの検証、符号化、配置、再配置とObject出力**です。命令選択や呼出規約の決定、ソース位置と`OriginId`の対応付け、リンク・実行は呼出し元が行います。
+Sashimiが担当するのは、**命令・オペランドの検証、符号化、配置、再配置とObject出力**です。命令選択や呼出規約の決定、ソース位置と`OriginId`の対応付け、リンク・実行は呼出し元が行います。
 
 ## 試してみる
 
 Rust環境でリポジトリを取得し、同梱の例を実行できます。
 
 ```sh
-git clone https://github.com/Cerune-Lang/SASHIMI.git
-cd SASHIMI
+git clone https://github.com/Cerune-Lang/Sashimi.git
+cd Sashimi
 
 # 型付きの単一命令をASMと機械語バイト列で表示
 cargo run --example typed
@@ -57,7 +57,7 @@ clang -fPIE -pie target/program-linux/program.s -o target/program-linux/from-asm
 ./target/program-linux/from-asm
 ```
 
-Windowsは`x86_64-pc-windows-msvc`を指定し、対応するツールチェーンでリンクしてください。**SASHIMI自体にリンク処理やCLIはありません**。上記はリポジトリ同梱のRust exampleです。
+Windowsは`x86_64-pc-windows-msvc`を指定し、対応するツールチェーンでリンクしてください。**Sashimi自体にリンク処理やCLIはありません**。上記はリポジトリ同梱のRust exampleです。
 
 ### Rustから使う
 
@@ -65,7 +65,7 @@ Windowsは`x86_64-pc-windows-msvc`を指定し、対応するツールチェー�
 
 ```toml
 [dependencies]
-sashimi-assembler = { git = "https://github.com/Cerune-Lang/SASHIMI.git" }
+sashimi-assembler = { git = "https://github.com/Cerune-Lang/Sashimi.git" }
 ```
 
 型付き`Program`で「42を返す」x86-64の命令を作り、**同じ入力からASMとObjectを生成し、機械語の位置を確認する**最小例です。
@@ -118,7 +118,7 @@ retq
 
 `movabsq`の機械語は`48 b8 2a 00 00 00 00 00 00 00`（10バイト）。呼出し元が付けた`OriginId(7)`は、この命令の**`.text`セクション内の`[0, 10)`**に対応します。`retq`は合成項目（`synthetic`）として別に記録されます。
 
-`artifact.entries`に入るのは、**SASHIMIが生成したObjectのセクション内オフセット**です。Objectファイル内の絶対位置やリンク後アドレスではありません。単一命令だけを扱う[`typed` API](docs/design/typed-instructions.ja.md)と、分岐・再配置を含む[`examples/program.rs`](examples/program.rs)も参照してください。
+`artifact.entries`に入るのは、**Sashimiが生成したObjectのセクション内オフセット**です。Objectファイル内の絶対位置やリンク後アドレスではありません。単一命令だけを扱う[`typed` API](docs/design/typed-instructions.ja.md)と、分岐・再配置を含む[`examples/program.rs`](examples/program.rs)も参照してください。
 
 
 ## 対応範囲と制限
@@ -144,14 +144,14 @@ python3 scripts/verify_snapshot.py
 
 PowerShellでは先に`$env:SASHIMI_TEST_CLANG = 'clang'`を設定してください。Clangを指定しないと外部リンク・実行比較はスキップされます。
 
-Ceruneは、**NativeのLIRからSASHIMIの型付き`Program`を構築し、同じ入力からASMとObjectを生成する経路に移行済み**です（[Cerune PR #191](https://github.com/Cerune-Lang/Cerune/pull/191)）。移行では旧生成器とのObject一致やリンク後の動作を比較しています。これは移行前後の同等性確認であり、符号化器全体の正しさの証明ではありません。
+Ceruneは、**NativeのLIRからSashimiの型付き`Program`を構築し、同じ入力からASMとObjectを生成する経路に移行済み**です（[Cerune PR #191](https://github.com/Cerune-Lang/Cerune/pull/191)）。移行では旧生成器とのObject一致やリンク後の動作を比較しています。これは移行前後の同等性確認であり、符号化器全体の正しさの証明ではありません。
 
 ## 設計・今後の計画
 
 - [型付き機械命令と生成位置の設計](docs/design/typed-assembly.ja.md)
 - [型付き単一命令API](docs/design/typed-instructions.ja.md)
 - [Program・Object・出自対応API](docs/design/typed-program.ja.md)
-- [Cerune言語への段階的な移植構想（Issue #2）](https://github.com/Cerune-Lang/SASHIMI/issues/2)
+- [Cerune言語への段階的な移植構想（Issue #2）](https://github.com/Cerune-Lang/Sashimi/issues/2)
 
 ## ライセンス
 
